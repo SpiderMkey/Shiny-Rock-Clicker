@@ -39,7 +39,7 @@
         }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
     <div id="sidebar">
         <h2>Shiny Rocks: <span id="rockCount">0</span></h2>
         <button id="upgradeButton">Upgrade Click (Cost: 10 shiny rocks) - Upgrades: <span id="upgradeCount">0</span></button>
@@ -75,10 +75,6 @@
         let minigameCount = 0;
         let playGameCount = 0;
 
-        let autoMinerInterval;
-        let minigameInterval;
-        let playGameInterval;
-
         document.getElementById("rock").addEventListener("click", () => {
             rockCount += clickValue;
             updateRockCount();
@@ -108,7 +104,11 @@
                 document.getElementById("autoClickerButton").innerText = `Buy Auto Miner (Cost: ${autoMinerCost} shiny rocks) - Auto Miners: ${autoMinerCount}`;
 
                 if (!autoMinerActive) {
-                    startAutoMiner();
+                    autoMinerActive = true;
+                    setInterval(() => {
+                        rockCount += autoMinerValue;
+                        updateRockCount();
+                    }, 1000);
                 }
             } else {
                 showMessage("Not enough shiny rocks!");
@@ -122,9 +122,12 @@
                 minigameCount++;
                 updateRockCount();
 
-                if (!minigameInterval) {
-                    startMinigame();
-                }
+                setInterval(() => {
+                    if (minigameActive) {
+                        rockCount += 5;
+                        updateRockCount();
+                    }
+                }, 1000);
 
                 minigameCost = Math.floor(minigameCost * 1.3);
                 document.getElementById("minigameButton").innerText = `Play a Minigame (Cost: ${minigameCost} shiny rocks) - Minigames: ${minigameCount}`;
@@ -139,10 +142,12 @@
                 playGameCount++;
                 updateRockCount();
 
-                if (!playGameActive) { // Check if the upgrade is not already active
-                    playGameActive = true; // Set the active state
-                    startPlayGame(); // Start the interval to add rocks
-                }
+                setInterval(() => {
+                    if (playGameActive) {
+                        rockCount += 8; // Adds 8 shiny rocks every second
+                        updateRockCount();
+                    }
+                }, 1000);
 
                 playGameCost = Math.floor(playGameCost * 1.3);
                 document.getElementById("playGameButton").innerText = `Playing the Game (Cost: ${playGameCost} shiny rocks) - Games: ${playGameCount}`;
@@ -181,12 +186,8 @@
             minigameCount = 0;
             playGameCount = 0;
             upgradeCount = 0;
-            autoMinerActive = false;
-            minigameActive = false;
-            playGameActive = false;
             localStorage.removeItem("gameState"); // Clear the saved game
             updateUI();
-            clearIntervals(); // Clear any existing intervals
         }
 
         function updateRockCount() {
@@ -212,43 +213,6 @@
             }, 3000);
         }
 
-        function startAutoMiner() {
-            autoMinerActive = true;
-            autoMinerInterval = setInterval(() => {
-                rockCount += autoMinerValue; // Adds shiny rocks every second
-                updateRockCount();
-            }, 1000);
-        }
-
-        function startMinigame() {
-            minigameActive = true;
-            minigameInterval = setInterval(() => {
-                if (minigameActive) {
-                    rockCount += 5; // Adds 5 shiny rocks every second
-                    updateRockCount();
-                }
-            }, 1000);
-        }
-
-        function startPlayGame() {
-            playGameActive = true;
-            playGameInterval = setInterval(() => {
-                if (playGameActive) { // Check if the upgrade is active
-                    rockCount += 8; // Adds 8 shiny rocks every second
-                    updateRockCount();
-                }
-            }, 1000); // Now adds every 1 second
-        }
-
-        function clearIntervals() {
-            clearInterval(autoMinerInterval);
-            clearInterval(minigameInterval);
-            clearInterval(playGameInterval);
-            autoMinerInterval = null;
-            minigameInterval = null;
-            playGameInterval = null;
-        }
-
         setInterval(saveGame, 5000); // Auto-save every 5 seconds
 
         window.onload = () => {
@@ -265,23 +229,10 @@
                 minigameCount = savedGameState.minigameCount;
                 playGameCount = savedGameState.playGameCount;
                 upgradeCount = savedGameState.upgradeCount;
-
-                // Restore active states
                 autoMinerActive = savedGameState.autoMinerActive;
                 minigameActive = savedGameState.minigameActive;
                 playGameActive = savedGameState.playGameActive;
-
                 updateUI();
-
-                if (autoMinerActive) {
-                    startAutoMiner();
-                }
-                if (minigameActive) {
-                    startMinigame();
-                }
-                if (playGameActive) {
-                    startPlayGame();
-                }
             }
         };
     </script>
