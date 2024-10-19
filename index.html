@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shiny Rock Miner</title>
     <style>
-        /* Your existing styles here */
         body {
             display: flex;
             height: 100vh;
@@ -38,20 +37,6 @@
             margin: 5px 0;
             cursor: pointer;
         }
-
-        /* Style for save button in bottom-right corner */
-        #saveButton {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 15px;
-            background-color: rgba(0, 123, 255, 0.8);
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
     </style>
 </head>
 <body>
@@ -61,21 +46,19 @@
         <button id="autoClickerButton">Buy Auto Miner (Cost: 50 shiny rocks) - Auto Miners: <span id="autoMinerCount">0</span></button>
         <button id="minigameButton">Play a Minigame (Cost: 100 shiny rocks) - Minigames: <span id="minigameCount">0</span></button>
         <button id="playGameButton">Playing the Game (Cost: 200 shiny rocks) - Games: <span id="playGameCount">0</span></button>
+        <button id="saveButton">Save Game</button>
+        <button id="resetButton">Reset Progress</button>
         <div id="message"></div>
     </div>
 
     <div id="main">
         <h1>Shiny Rock Miner</h1>
         <h2>Shiny Rocks: <span id="rockCountAbove">0</span></h2>
-        <img id="rock" src="https://i.pinimg.com/originals/2a/80/2c/2a802c1017ddc391a412e4946f0919c8.png" alt="Shiny Rock">
+        <img id="rock" src="https://orig00.deviantart.net/62cb/f/2011/169/1/c/365_day_168_crystals_by_korikian-d3j8n69.png" alt="Shiny Rock">
         <h3>Auto Miner Output: <span id="autoClickerOutput">0</span> shiny rocks per second</h3>
     </div>
 
-    <!-- Save Button in Bottom Right -->
-    <button id="saveButton">Save Progress</button>
-
     <script>
-        // Game state variables
         let rockCount = 0;
         let upgradeCost = 10;
         let autoMinerCost = 50; 
@@ -83,77 +66,19 @@
         let playGameCost = 200;
         let clickValue = 1;
         let autoMinerValue = 0; 
-        let autoMinerActive = false;
+        let autoMinerActive = false; 
         let minigameActive = false;
         let playGameActive = false;
 
-        // Upgrade counters
         let upgradeCount = 0;
         let autoMinerCount = 0;
         let minigameCount = 0;
         let playGameCount = 0;
 
-        // Load saved progress from localStorage
-        function loadProgress() {
-            const savedData = JSON.parse(localStorage.getItem('shinyRockMinerData'));
-            if (savedData) {
-                rockCount = savedData.rockCount || 0;
-                upgradeCost = savedData.upgradeCost || 10;
-                autoMinerCost = savedData.autoMinerCost || 50;
-                minigameCost = savedData.minigameCost || 100;
-                playGameCost = savedData.playGameCost || 200;
-                clickValue = savedData.clickValue || 1;
-                autoMinerValue = savedData.autoMinerValue || 0;
-                upgradeCount = savedData.upgradeCount || 0;
-                autoMinerCount = savedData.autoMinerCount || 0;
-                minigameCount = savedData.minigameCount || 0;
-                playGameCount = savedData.playGameCount || 0;
-                autoMinerActive = savedData.autoMinerActive || false;
-                updateRockCount();
-                document.getElementById("upgradeButton").innerText = `Upgrade Click (Cost: ${upgradeCost} shiny rocks) - Upgrades: ${upgradeCount}`;
-                document.getElementById("autoClickerButton").innerText = `Buy Auto Miner (Cost: ${autoMinerCost} shiny rocks) - Auto Miners: ${autoMinerCount}`;
-                document.getElementById("minigameButton").innerText = `Play a Minigame (Cost: ${minigameCost} shiny rocks) - Minigames: ${minigameCount}`;
-                document.getElementById("playGameButton").innerText = `Playing the Game (Cost: ${playGameCost} shiny rocks) - Games: ${playGameCount}`;
-            }
-        }
+        let autoMinerInterval;
+        let minigameInterval;
+        let playGameInterval;
 
-        // Save progress to localStorage
-        function saveProgress() {
-            const gameState = {
-                rockCount,
-                upgradeCost,
-                autoMinerCost,
-                minigameCost,
-                playGameCost,
-                clickValue,
-                autoMinerValue,
-                upgradeCount,
-                autoMinerCount,
-                minigameCount,
-                playGameCount,
-                autoMinerActive,
-            };
-            localStorage.setItem('shinyRockMinerData', JSON.stringify(gameState));
-            showMessage('Progress saved!');
-        }
-
-        // Function to update rock count display
-        function updateRockCount() {
-            document.getElementById("rockCount").innerText = rockCount;
-            document.getElementById("rockCountAbove").innerText = rockCount;
-        }
-
-        // Function to display messages
-        function showMessage(message) {
-            const messageDiv = document.getElementById("message");
-            messageDiv.innerText = message;
-            messageDiv.style.display = "block";
-            setTimeout(() => {
-                messageDiv.style.display = "none";
-            }, 3000); 
-        }
-
-        // Add event listeners for buttons
         document.getElementById("rock").addEventListener("click", () => {
             rockCount += clickValue;
             updateRockCount();
@@ -167,7 +92,6 @@
                 upgradeCount++;
                 updateRockCount();
                 document.getElementById("upgradeButton").innerText = `Upgrade Click (Cost: ${upgradeCost} shiny rocks) - Upgrades: ${upgradeCount}`;
-                saveProgress();
             } else {
                 showMessage("Not enough shiny rocks!");
             }
@@ -182,27 +106,184 @@
                 updateRockCount();
                 document.getElementById("autoClickerOutput").innerText = autoMinerValue;
                 document.getElementById("autoClickerButton").innerText = `Buy Auto Miner (Cost: ${autoMinerCost} shiny rocks) - Auto Miners: ${autoMinerCount}`;
+
                 if (!autoMinerActive) {
-                    autoMinerActive = true;
-                    setInterval(() => {
-                        rockCount += autoMinerValue;
-                        updateRockCount();
-                    }, 1000);
+                    startAutoMiner();
                 }
-                saveProgress();
             } else {
                 showMessage("Not enough shiny rocks!");
             }
         });
 
-        // Save progress button
-        document.getElementById("saveButton").addEventListener("click", saveProgress);
+        document.getElementById("minigameButton").addEventListener("click", () => {
+            if (rockCount >= minigameCost) {
+                rockCount -= minigameCost;
+                minigameActive = true;
+                minigameCount++;
+                updateRockCount();
 
-        // Auto-save progress every 10 seconds
-        setInterval(saveProgress, 10000);
+                if (!minigameInterval) {
+                    startMinigame();
+                }
 
-        // Load progress on page load
-        window.onload = loadProgress;
+                minigameCost = Math.floor(minigameCost * 1.3);
+                document.getElementById("minigameButton").innerText = `Play a Minigame (Cost: ${minigameCost} shiny rocks) - Minigames: ${minigameCount}`;
+            } else {
+                showMessage("Not enough shiny rocks!");
+            }
+        });
+
+        document.getElementById("playGameButton").addEventListener("click", () => {
+            if (rockCount >= playGameCost) {
+                rockCount -= playGameCost;
+                playGameCount++;
+                updateRockCount();
+
+                if (!playGameActive) { // Check if the upgrade is not already active
+                    playGameActive = true; // Set the active state
+                    startPlayGame(); // Start the interval to add rocks
+                }
+
+                playGameCost = Math.floor(playGameCost * 1.3);
+                document.getElementById("playGameButton").innerText = `Playing the Game (Cost: ${playGameCost} shiny rocks) - Games: ${playGameCount}`;
+            } else {
+                showMessage("Not enough shiny rocks!");
+            }
+        });
+
+        // Save game state to localStorage
+        function saveGame() {
+            const gameState = {
+                rockCount, clickValue, upgradeCost, autoMinerCost, minigameCost, playGameCost,
+                autoMinerValue, autoMinerCount, minigameCount, playGameCount, upgradeCount,
+                autoMinerActive, minigameActive, playGameActive
+            };
+            localStorage.setItem("gameState", JSON.stringify(gameState));
+        }
+
+        // Reset game state
+        document.getElementById("resetButton").addEventListener("click", () => {
+            if (confirm("Are you sure you want to reset your progress?")) {
+                resetGame();
+                showMessage("Game progress reset!");
+            }
+        });
+
+        function resetGame() {
+            rockCount = 0;
+            clickValue = 1;
+            upgradeCost = 10;
+            autoMinerCost = 50;
+            minigameCost = 100;
+            playGameCost = 200;
+            autoMinerValue = 0;
+            autoMinerCount = 0;
+            minigameCount = 0;
+            playGameCount = 0;
+            upgradeCount = 0;
+            autoMinerActive = false;
+            minigameActive = false;
+            playGameActive = false;
+            localStorage.removeItem("gameState"); // Clear the saved game
+            updateUI();
+            clearIntervals(); // Clear any existing intervals
+        }
+
+        function updateRockCount() {
+            document.getElementById("rockCount").innerText = rockCount;
+            document.getElementById("rockCountAbove").innerText = rockCount;
+        }
+
+        function updateUI() {
+            document.getElementById("upgradeButton").innerText = `Upgrade Click (Cost: ${upgradeCost} shiny rocks) - Upgrades: ${upgradeCount}`;
+            document.getElementById("autoClickerButton").innerText = `Buy Auto Miner (Cost: ${autoMinerCost} shiny rocks) - Auto Miners: ${autoMinerCount}`;
+            document.getElementById("autoClickerOutput").innerText = autoMinerValue;
+            document.getElementById("minigameButton").innerText = `Play a Minigame (Cost: ${minigameCost} shiny rocks) - Minigames: ${minigameCount}`;
+            document.getElementById("playGameButton").innerText = `Playing the Game (Cost: ${playGameCost} shiny rocks) - Games: ${playGameCount}`;
+            updateRockCount();
+        }
+
+        function showMessage(message) {
+            const messageDiv = document.getElementById("message");
+            messageDiv.innerText = message;
+            messageDiv.style.display = "block";
+            setTimeout(() => {
+                messageDiv.style.display = "none";
+            }, 3000);
+        }
+
+        function startAutoMiner() {
+            autoMinerActive = true;
+            autoMinerInterval = setInterval(() => {
+                rockCount += autoMinerValue; // Adds shiny rocks every second
+                updateRockCount();
+            }, 1000);
+        }
+
+        function startMinigame() {
+            minigameActive = true;
+            minigameInterval = setInterval(() => {
+                if (minigameActive) {
+                    rockCount += 5; // Adds 5 shiny rocks every second
+                    updateRockCount();
+                }
+            }, 1000);
+        }
+
+        function startPlayGame() {
+            playGameActive = true;
+            playGameInterval = setInterval(() => {
+                if (playGameActive) { // Check if the upgrade is active
+                    rockCount += 8; // Adds 8 shiny rocks every second
+                    updateRockCount();
+                }
+            }, 1000); // Now adds every 1 second
+        }
+
+        function clearIntervals() {
+            clearInterval(autoMinerInterval);
+            clearInterval(minigameInterval);
+            clearInterval(playGameInterval);
+            autoMinerInterval = null;
+            minigameInterval = null;
+            playGameInterval = null;
+        }
+
+        setInterval(saveGame, 5000); // Auto-save every 5 seconds
+
+        window.onload = () => {
+            const savedGameState = JSON.parse(localStorage.getItem("gameState"));
+            if (savedGameState) {
+                rockCount = savedGameState.rockCount;
+                clickValue = savedGameState.clickValue;
+                upgradeCost = savedGameState.upgradeCost;
+                autoMinerCost = savedGameState.autoMinerCost;
+                minigameCost = savedGameState.minigameCost;
+                playGameCost = savedGameState.playGameCost;
+                autoMinerValue = savedGameState.autoMinerValue;
+                autoMinerCount = savedGameState.autoMinerCount;
+                minigameCount = savedGameState.minigameCount;
+                playGameCount = savedGameState.playGameCount;
+                upgradeCount = savedGameState.upgradeCount;
+
+                // Restore active states
+                autoMinerActive = savedGameState.autoMinerActive;
+                minigameActive = savedGameState.minigameActive;
+                playGameActive = savedGameState.playGameActive;
+
+                updateUI();
+
+                if (autoMinerActive) {
+                    startAutoMiner();
+                }
+                if (minigameActive) {
+                    startMinigame();
+                }
+                if (playGameActive) {
+                    startPlayGame();
+                }
+            }
+        };
     </script>
 </body>
 </html>
